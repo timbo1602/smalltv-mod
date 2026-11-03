@@ -202,6 +202,8 @@ static void handleStatus() {
   d.version = FW_VERSION;
   d.variant = FW_VARIANT;   // which release image this is, e.g. "esp8266-lean"
   d.repo = REPO_URL;
+  d.build = FW_BUILD_DATE;
+  d.git = GIT_COMMIT;
   d.updateMsg = g_updateMsg.c_str();
   d.mode = (netMode() == NET_AP) ? "ap" : "sta";
   d.connected = netConnected();
@@ -213,6 +215,10 @@ static void handleStatus() {
   d.maxblk = platformMaxFreeBlock();     // largest contiguous block (TLS handshake needs one)
   d.contstk = platformFreeContStack();   // primary stack headroom (ESP8266)
   d.uptime = millis() / 1000;
+  d.flashSize = ESP.getFlashChipSize();
+  d.sketchSize = ESP.getSketchSize();
+  d.fsTotal = LittleFS.totalBytes();
+  d.fsUsed = LittleFS.usedBytes();
   d.reset = appResetReason();
   d.synced = clockSynced();
   d.time = clockText.c_str();
@@ -369,15 +375,25 @@ static void handleFactory() {
   scheduleReboot(400);
 }
 
-// Full settings backup: stream the persisted config.json verbatim. It includes
-// the WiFi passwords — same trust domain as typing them into this page.
+// Sanitized configuration backup. Secrets remain on the device: a restored
+// backup keeps the currently stored WiFi/AP/VPN/auth secrets because the
+// partial settings importer only applies keys that are present.
 static void handleExport() {
   if (!requireAuth()) return;
-  File f = LittleFS.open("/config.json", "r");
-  if (!f) { server.send(404, "text/plain", "no config saved yet"); return; }
-  server.sendHeader("Content-Disposition", "attachment; filename=smalltv-config.json");
-  server.streamFile(f, "application/json");
-  f.close();
+  appRelease();
+  JsonDocument doc;
+  JsonObject root = doc.to<JsonObject>();
+  settingsToJson(*S, root, /*includeSecrets=*/false);
+  root["format"] = "brands-friends-smalltv-config-v1";
+  root.remove("wifi");
+  root.remove("staSsid");
+  root.remove("staPassSet");
+  root.remove("apPassSet");
+  root.remove("wg");
+  root.remove("auth");
+  root.remove("ha");
+  server.sendHeader("Content-Disposition", "attachment; filename=brands-friends-smalltv-config.json");
+  sendJson(doc);
 }
 
 // Restore a backup: apply everything, persist, reboot (WiFi/hostname may change).

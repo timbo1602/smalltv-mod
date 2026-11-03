@@ -19,6 +19,9 @@
 #include "Mode.h"
 #include "Clock.h"
 #include "WgClient.h"
+#include "BrandScreen.h"
+#include "ClockScreen.h"
+#include "ScreenManager.h"
 #if WITH_THEME
 #include "features/theme/ThemeMode.h"
 #endif
@@ -44,9 +47,11 @@
 // The compiled-in features, in display order. main.cpp holds no per-feature
 // state of its own — each mode owns its fetch/render/dirty tracking.
 static DisplayMode* kModes[] = {
+  &g_brandScreen,
 #if WITH_TICKER
   &g_tickerMode,
 #endif
+  &g_clockScreen,
 #if WITH_USAGE
   &g_usageMode,
 #endif
@@ -68,26 +73,19 @@ static const size_t kModeCount = sizeof(kModes) / sizeof(kModes[0]);
 static size_t   g_carIdx = 0;
 static uint32_t g_carSwitch = 0;
 static bool     g_carPaused = false;   // button paused the auto-rotation (stays put)
+static uint32_t g_manualAt = 0;
 
 static bool carouselHas(const Settings& s, const DisplayMode* m) {
-  switch (m->modeConst()) {
-    case MODE_STOCKS: return s.carouselTicker;
-    case MODE_USAGE:  return s.carouselUsage;
-    case MODE_RADAR:  return s.carouselRadar;
-#if WITH_HA
-    case MODE_HA:     return s.carouselHa;
-#endif
-#if WITH_THEME
-    case MODE_THEME:  return s.carouselTheme;
-#endif
-    default:          return true;
-  }
+  return screenManagerEnabled(m, s);
 }
 
-// Advance g_carIdx to the next ticked mode (stays put if none other is ticked).
-static void carouselNext(const Settings& s) {
+// Advance in the configured order (stays put if none other is enabled).
+static void carouselMove(const Settings& s, int direction) {
   for (size_t hop = 1; hop <= kModeCount; hop++) {
-    size_t cand = (g_carIdx + hop) % kModeCount;
+    int raw = (int)g_carIdx + direction * (int)hop;
+    if (!s.screens.loop && (raw < 0 || raw >= (int)kModeCount)) return;
+    while (raw < 0) raw += kModeCount;
+    size_t cand = (size_t)raw % kModeCount;
     if (!carouselHas(s, kModes[cand])) continue;
     if (cand != g_carIdx) {
       g_carIdx = cand;
@@ -96,13 +94,28 @@ static void carouselNext(const Settings& s) {
     return;
   }
 }
+static void carouselNext(const Settings& s) { carouselMove(s, 1); }
+static void carouselPrevious(const Settings& s) { carouselMove(s, -1); }
+
+static size_t homeIndex() {
+  for (size_t i = 0; i < kModeCount; ++i)
+    if (kModes[i]->modeConst() == MODE_BRAND) return i;
+  return 0;
+}
 
 static DisplayMode* activeMode(const Settings& s) {
   if (s.mode == MODE_CAROUSEL && kModeCount > 0) {
     if (g_carSwitch == 0) g_carSwitch = millis();
     if (!carouselHas(s, kModes[g_carIdx])) carouselNext(s);   // settings changed
-    bool dwellExpired = millis() - g_carSwitch >= (uint32_t)s.carouselSec * 1000UL;
-    if (g_carPaused) dwellExpired = false;   // button froze the rotation on the current page
+    if (g_carPaused && s.screens.resumeAfterManual &&
+        millis() - g_manualAt >= (uint32_t)s.screens.resumeTimeoutSec * 1000UL) {
+      g_carPaused = false;
+      g_carSwitch = millis();
+    }
+    uint16_t dwell = screenManagerDuration(kModes[g_carIdx], s);
+    bool dwellExpired = s.screens.autoRotate &&
+                        millis() - g_carSwitch >= (uint32_t)dwell * 1000UL;
+    if (g_carPaused) dwellExpired = false;
     if (dwellExpired) {
       g_carSwitch = millis();
       carouselNext(s);
@@ -190,10 +203,10 @@ static void buttonAckNotify() {
 static void buttonGoHome() {
   g_carPaused = false;                 // resume normal rotation
   if (g_settings.mode == MODE_CAROUSEL && kModeCount > 0) {
-    g_carIdx = 0;
+    g_carIdx = homeIndex();
     g_carSwitch = millis();
-    if (!carouselHas(g_settings, kModes[0])) carouselNext(g_settings);  // 0 not ticked -> first ticked
-    else kModes[0]->wake(g_settings);
+    if (!carouselHas(g_settings, kModes[g_carIdx])) carouselNext(g_settings);
+    else kModes[g_carIdx]->wake(g_settings);
   } else {
     DisplayMode* m = activeMode(g_settings);
     if (m) m->invalidate(g_settings);
@@ -207,8 +220,17 @@ static void buttonNext() {
 #endif
   if (g_settings.mode != MODE_CAROUSEL || kModeCount == 0) return;
   g_carPaused = true;                  // manual navigation stops the auto-rotation
+  g_manualAt = millis();
   g_carSwitch = millis();
   carouselNext(g_settings);            // advance + wake the incoming mode
+}
+
+static void buttonPrevious() {
+  if (g_settings.mode != MODE_CAROUSEL || kModeCount == 0) return;
+  g_carPaused = true;
+  g_manualAt = millis();
+  g_carSwitch = millis();
+  carouselPrevious(g_settings);
 }
 
 static void buttonAction(uint8_t act) {
@@ -219,6 +241,7 @@ static void buttonAction(uint8_t act) {
     case BTN_ACT_NETINFO:    buttonShowNetInfo(); break;
     case BTN_ACT_WAKE:       buttonWake();        break;
     case BTN_ACT_ACK:        buttonAckNotify();   break;
+    case BTN_ACT_PREVIOUS:   buttonPrevious();    break;
     default: break;                                 // BTN_ACT_NONE
   }
 }
@@ -275,6 +298,11 @@ const char* appResetReason() { return g_resetReason.c_str(); }
 // Called by the web portal after settings are applied: re-init every mode and
 // force a fresh repaint so a mode/URL/symbol change takes effect immediately.
 void appInvalidate() {
+  screenManagerSort(kModes, kModeCount, g_settings);
+  if (g_carIdx >= kModeCount || !carouselHas(g_settings, kModes[g_carIdx])) {
+    g_carIdx = homeIndex();
+    if (!carouselHas(g_settings, kModes[g_carIdx])) carouselNext(g_settings);
+  }
   for (size_t i = 0; i < kModeCount; i++) kModes[i]->invalidate(g_settings);
 }
 
@@ -358,6 +386,8 @@ void setup() {
 #endif
 
   Serial.println("[boot] modes");
+  screenManagerSort(kModes, kModeCount, g_settings);
+  g_carIdx = homeIndex();
   for (size_t i = 0; i < kModeCount; i++) kModes[i]->begin(g_settings);
   Serial.println("[boot] done");
 
@@ -435,6 +465,12 @@ void loop() {
 #endif
 
   // --- STA mode: the active feature fetches + renders itself ---
+
+#if WITH_TICKER
+  // Fetch cadence is independent of which screen is visible, including while
+  // touch navigation has paused the carousel.
+  g_tickerMode.backgroundService(g_settings);
+#endif
 
   // Night-mode state machine (NTP-trust gate), then apply the effective brightness
   // (night override / auto-brightness / manual level).

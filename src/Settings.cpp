@@ -1,6 +1,7 @@
 #include "Settings.h"
 #include "AtomicJson.h"
 #include "Platform.h"   // platformChipId() for the unique default hostname
+#include "PixelArt.h"
 #include <LittleFS.h>
 
 static const char* CONFIG_PATH = "/config.json";
@@ -444,6 +445,112 @@ void RadarSettings::fromJson(JsonObjectConst o) {
 }
 
 // ===========================================================================
+// brands and friends pixel-art + screen manager slices
+// ===========================================================================
+static String colorToHex(uint32_t c) {
+  char out[8];
+  snprintf(out, sizeof(out), "#%06lx", (unsigned long)(c & 0xFFFFFF));
+  return String(out);
+}
+
+static bool parseColor(JsonVariantConst v, uint32_t& out) {
+  if (v.is<unsigned long>()) { out = v.as<unsigned long>() & 0xFFFFFF; return true; }
+  if (!v.is<const char*>()) return false;
+  const char* s = v.as<const char*>();
+  if (*s == '#') ++s;
+  if (strlen(s) != 6) return false;
+  char* end = nullptr;
+  unsigned long n = strtoul(s, &end, 16);
+  if (!end || *end) return false;
+  out = n & 0xFFFFFF;
+  return true;
+}
+
+void BrandSettings::setDefaults() {
+  enabled = true;
+  pixelArtDefaultHex(bitmapHex);
+  foreground = 0x000000;
+  background = 0xFFFFFF;
+  scale = 7;
+  x = 8;
+  y = 8;
+  inverted = false;
+  durationSec = 10;
+}
+
+void BrandSettings::toJson(JsonObject o) const {
+  o["enabled"] = enabled;
+  o["bitmap"] = bitmapHex;
+  o["foreground"] = colorToHex(foreground);
+  o["background"] = colorToHex(background);
+  o["scale"] = scale;
+  o["x"] = x;
+  o["y"] = y;
+  o["inverted"] = inverted;
+  o["durationSec"] = durationSec;
+}
+
+void BrandSettings::fromJson(JsonObjectConst o) {
+  if (o["enabled"].is<bool>()) enabled = o["enabled"];
+  if (o["bitmap"].is<const char*>()) {
+    String candidate = o["bitmap"].as<String>();
+    if (pixelArtHexValid(candidate)) bitmapHex = candidate;
+  }
+  parseColor(o["foreground"], foreground);
+  parseColor(o["background"], background);
+  if (o["scale"].is<int>()) scale = constrain((int)o["scale"], 1, 7);
+  const int maxPos = TFT_WIDTH - PIXEL_ART_W * scale;
+  if (o["x"].is<int>()) x = constrain((int)o["x"], 0, maxPos);
+  if (o["y"].is<int>()) y = constrain((int)o["y"], 0, maxPos);
+  // Re-clamp old coordinates after a scale change in the same request.
+  x = constrain((int)x, 0, maxPos);
+  y = constrain((int)y, 0, maxPos);
+  if (o["inverted"].is<bool>()) inverted = o["inverted"];
+  if (o["durationSec"].is<int>()) durationSec = constrain((int)o["durationSec"], 2, 3600);
+}
+
+void ScreenSettings::setDefaults() {
+  order = DEFAULT_SCREEN_ORDER;
+  autoRotate = true;
+  defaultDurationSec = 10;
+  resumeAfterManual = true;
+  resumeTimeoutSec = 30;
+  loop = true;
+  tickerEnabled = false;
+  clockEnabled = false;
+}
+
+void ScreenSettings::toJson(JsonObject o) const {
+  o["order"] = order;
+  o["autoRotate"] = autoRotate;
+  o["defaultDurationSec"] = defaultDurationSec;
+  o["resumeAfterManual"] = resumeAfterManual;
+  o["resumeTimeoutSec"] = resumeTimeoutSec;
+  o["loop"] = loop;
+  o["tickerEnabled"] = tickerEnabled;
+  o["clockEnabled"] = clockEnabled;
+}
+
+void ScreenSettings::fromJson(JsonObjectConst o) {
+  if (o["order"].is<const char*>()) {
+    String candidate = o["order"].as<String>();
+    bool valid = candidate.length() > 0 && candidate.length() < MAX_SCREEN_ORDER_LEN;
+    for (size_t i = 0; i < candidate.length(); ++i) {
+      char c = candidate[i];
+      if (!(isalnum((unsigned char)c) || c == ',' || c == '-' || c == '_')) valid = false;
+    }
+    if (valid) order = candidate;
+  }
+  if (o["autoRotate"].is<bool>()) autoRotate = o["autoRotate"];
+  if (o["defaultDurationSec"].is<int>()) defaultDurationSec = constrain((int)o["defaultDurationSec"], 2, 3600);
+  if (o["resumeAfterManual"].is<bool>()) resumeAfterManual = o["resumeAfterManual"];
+  if (o["resumeTimeoutSec"].is<int>()) resumeTimeoutSec = constrain((int)o["resumeTimeoutSec"], 1, 3600);
+  if (o["loop"].is<bool>()) loop = o["loop"];
+  if (o["tickerEnabled"].is<bool>()) tickerEnabled = o["tickerEnabled"];
+  if (o["clockEnabled"].is<bool>()) clockEnabled = o["clockEnabled"];
+}
+
+// ===========================================================================
 // Top-level settings
 // ===========================================================================
 void Settings::setDefaults() {
@@ -458,7 +565,7 @@ void Settings::setDefaults() {
   // mDNS out of the box. A hostname saved in config.json overrides this.
   hostname = String(DEFAULT_HOSTNAME) + "-" + String(platformChipId() & 0xFFFF, HEX);
 
-  mode = DEFAULT_MODE;
+  mode = MODE_CAROUSEL;
   themeId = "";
   carouselSec = DEFAULT_CAROUSEL_SEC;
   carouselTicker = carouselUsage = carouselRadar = carouselHa = true;
@@ -479,6 +586,8 @@ void Settings::setDefaults() {
   wg.setDefaults();
   auth.setDefaults();
   button.setDefaults();
+  brand.setDefaults();
+  screens.setDefaults();
 }
 
 // ---------------------------------------------------------------------------
@@ -576,6 +685,8 @@ void settingsToJson(const Settings& s, JsonObject root, bool includeSecrets) {
   s.wg.toJson(root["wg"].to<JsonObject>(), includeSecrets);
   s.auth.toJson(root["auth"].to<JsonObject>(), includeSecrets);
   s.button.toJson(root["button"].to<JsonObject>());
+  s.brand.toJson(root["brand"].to<JsonObject>());
+  s.screens.toJson(root["screens"].to<JsonObject>());
 }
 
 // Apply only the keys that are present (partial update friendly). Accepts both
@@ -668,4 +779,6 @@ void settingsApplyJson(Settings& s, JsonObjectConst root) {
   if (root["wg"].is<JsonObjectConst>()) s.wg.fromJson(root["wg"].as<JsonObjectConst>());
   if (root["auth"].is<JsonObjectConst>()) s.auth.fromJson(root["auth"].as<JsonObjectConst>());
   if (root["button"].is<JsonObjectConst>()) s.button.fromJson(root["button"].as<JsonObjectConst>());
+  if (root["brand"].is<JsonObjectConst>()) s.brand.fromJson(root["brand"].as<JsonObjectConst>());
+  if (root["screens"].is<JsonObjectConst>()) s.screens.fromJson(root["screens"].as<JsonObjectConst>());
 }

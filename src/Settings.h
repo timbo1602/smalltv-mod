@@ -192,6 +192,43 @@ struct ButtonSettings {
   void fromJson(JsonObjectConst o);
 };
 
+// ---- brands and friends pixel-art home screen -----------------------------
+// The bitmap is 1024 monochrome bits encoded as 256 hexadecimal characters,
+// row-major and MSB first. Keeping it in config.json makes it atomically
+// persistent and includes it in configuration backup/restore.
+struct BrandSettings {
+  bool     enabled;
+  String   bitmapHex;
+  uint32_t foreground;   // browser-style 0xRRGGBB
+  uint32_t background;
+  uint8_t  scale;        // 1..7 (32*7 = 224)
+  int16_t  x;
+  int16_t  y;
+  bool     inverted;
+  uint16_t durationSec;
+
+  void setDefaults();
+  void toJson(JsonObject o) const;
+  void fromJson(JsonObjectConst o);
+};
+
+// Ordered module-level carousel. Tickers remain one screen per configured
+// symbol inside TickerMode; the order string controls where that group sits.
+struct ScreenSettings {
+  String   order;              // comma-separated stable DisplayMode ids
+  bool     autoRotate;
+  uint16_t defaultDurationSec;
+  bool     resumeAfterManual;
+  uint16_t resumeTimeoutSec;
+  bool     loop;
+  bool     tickerEnabled;
+  bool     clockEnabled;
+
+  void setDefaults();
+  void toJson(JsonObject o) const;
+  void fromJson(JsonObjectConst o);
+};
+
 // ---- Top-level settings ----------------------------------------------------
 struct Settings {
   // --- WiFi station networks (the device joins one of these) ---
@@ -228,6 +265,8 @@ struct Settings {
   WgSettings      wg;        // WireGuard tunnel (ESP32 targets)
   AuthSettings    auth;      // optional web UI password
   ButtonSettings  button;    // physical button behaviour (boards with BTN_PIN)
+  BrandSettings   brand;     // editable 32x32 home artwork
+  ScreenSettings  screens;   // ordered modular carousel
 
   void setDefaults();
 };

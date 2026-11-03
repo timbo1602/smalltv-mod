@@ -18,6 +18,9 @@ class TickerMode : public DisplayMode {
     needRender_ = true;
     lastRotate_ = millis();
   }
+  // Keep quotes fresh while another screen is visible or manual navigation is
+  // paused. This intentionally fetches without rendering.
+  void backgroundService(const Settings& s);
 
  private:
   void render(const Settings& s);   // draw the current page

@@ -380,3 +380,5 @@ void TickerMode::service(const Settings& s) {
     needRender_ = false;
   }
 }
+
+void TickerMode::backgroundService(const Settings& s) { stocksService(s); }

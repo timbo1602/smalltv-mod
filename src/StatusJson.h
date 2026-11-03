@@ -33,6 +33,7 @@ struct StatusWg {
 // must live until writeStatusHead() returns.
 struct StatusData {
   const char *fw = "", *version = "", *variant = "", *repo = "";
+  const char *build = "", *git = "";
   const char* updateMsg = "";   // left out when empty
   const char *mode = "", *ssid = "", *ip = "";
   const char* wifiFail = "";    // left out when empty
@@ -42,6 +43,7 @@ struct StatusData {
   bool connected = false, synced = false, night = false, nightHeld = false, clockFresh = false;
   int rssi = 0;
   uint32_t heap = 0, maxblk = 0, contstk = 0, uptime = 0;
+  uint32_t flashSize = 0, sketchSize = 0, fsTotal = 0, fsUsed = 0;
   StatusWg wg;
 };
 struct StatusTicker {
@@ -86,6 +88,8 @@ template <class Out> void writeStatusHead(Out& out, const StatusData& d) {
   member(out, PSTR(",\"version\":"), d.version);
   member(out, PSTR(",\"variant\":"), d.variant);
   member(out, PSTR(",\"repo\":"), d.repo);
+  if (d.build[0]) member(out, PSTR(",\"build\":"), d.build);
+  if (d.git[0]) member(out, PSTR(",\"git\":"), d.git);
   if (d.updateMsg[0]) member(out, PSTR(",\"updateMsg\":"), d.updateMsg);
   member(out, PSTR(",\"mode\":"), d.mode);
   member(out, PSTR(",\"connected\":"), d.connected);
@@ -97,6 +101,10 @@ template <class Out> void writeStatusHead(Out& out, const StatusData& d) {
   member(out, PSTR(",\"maxblk\":"), d.maxblk);
   member(out, PSTR(",\"contstk\":"), d.contstk);
   member(out, PSTR(",\"uptime\":"), d.uptime);
+  if (d.flashSize) member(out, PSTR(",\"flashSize\":"), d.flashSize);
+  if (d.sketchSize) member(out, PSTR(",\"sketchSize\":"), d.sketchSize);
+  if (d.fsTotal) member(out, PSTR(",\"fsTotal\":"), d.fsTotal);
+  if (d.fsTotal) member(out, PSTR(",\"fsUsed\":"), d.fsUsed);
   member(out, PSTR(",\"reset\":"), d.reset);
   member(out, PSTR(",\"synced\":"), d.synced);
   if (d.time[0]) member(out, PSTR(",\"time\":"), d.time);

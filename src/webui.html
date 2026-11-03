@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SmallTV</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMjJjNTVlIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iNyIgeT0iMTMiIHdpZHRoPSI1MCIgaGVpZ2h0PSIzOCIgcng9IjYiLz48cG9seWxpbmUgcG9pbnRzPSIxNSwzOCAyMywzMCAzMCwzNCAzNywyMiA0NCwyOCA1MCwyMCIvPjxwYXRoIGQ9Ik0yNCA1MXY2TTQwIDUxdjZNMjAgNTdoOE0zNiA1N2g4Ii8+PC9nPjwvc3ZnPg==">
+<title>brands and friends · SmallTV Pro</title>
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAtklEQVR42u2XQQrAIAwERein/HyP/ZMKKdKL2KZ2NZpCu7AHL2YIYUmMwUUVDxE1Wq1w7kWzeHM3aJCfFZcUCkHSAAzIfdtHSR3AWstC0AyAogsbDIBMPDoLqgCkCOC0AagbQCKYpgFw8fwDvG8GvPe6QcR98C2Aq0+EAeprWAhh5BCetNQK9AJk+wC2jMYYpXNAbiOWLg5DIMFzPJUPkwSRewZIeXTAAEmr1BXUCpDL9ZxeJcAOYJpc9LkcIQoAAAAASUVORK5CYII=">
 <style>
 :root{--bg:#0e1116;--card:#171c24;--mut:#8b96a5;--fg:#e6edf3;--acc:#3fb950;--acc2:#2f81f7;--red:#f85149;--bd:#262d38}
 *{box-sizing:border-box}
@@ -49,34 +49,80 @@ td{padding:6px 4px}
 .bar>div{height:100%;width:0;background:var(--acc2);transition:.2s}
 small.hint{display:block;color:var(--mut);margin-top:4px;font-size:12px}
 .chip{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;letter-spacing:.03em;background:var(--acc2);color:#fff;vertical-align:middle}
+.device{width:240px;height:240px;max-width:100%;display:block;margin:10px auto;background:#fff;border-radius:10px;image-rendering:pixelated}
+.pixel-editor{display:grid;grid-template-columns:repeat(32,1fr);width:min(100%,512px);aspect-ratio:1;margin:12px auto;touch-action:none;border:1px solid var(--bd);background:#fff}
+.pixel-editor i{display:block;border-right:1px solid rgba(127,127,127,.22);border-bottom:1px solid rgba(127,127,127,.22)}
+.screen-row{display:grid;grid-template-columns:26px 1fr auto auto auto;gap:6px;align-items:center;padding:9px 0;border-bottom:1px solid var(--bd)}
+.screen-row:last-child{border:0}.screen-row button{padding:5px 9px!important}
+.warning{border-color:#f0b429;background:#2a210d}.warning strong{color:#ffd166}
 </style></head>
 <body>
-<header><svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="var(--acc)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="13" width="50" height="38" rx="6"/><polyline points="15,38 23,30 30,34 37,22 44,28 50,20"/><path d="M24 51v6M40 51v6M20 57h8M36 57h8"/></g></svg><span id="dot" class="dot"></span><h1>SmallTV</h1><span id="chip" class="chip" style="display:none"></span><span id="hi" class="muted"></span></header>
+<header><span id="dot" class="dot"></span><h1>brands and friends · SmallTV Pro</h1><span id="chip" class="chip" style="display:none"></span><span id="hi" class="muted"></span></header>
 <nav>
- <button data-t="status" class="active">Status</button>
- <button data-t="wifi">WiFi</button>
+ <button data-t="status" class="active">Dashboard</button>
+ <button data-t="screens">Screens</button>
+ <button data-t="pixel">Pixel Art</button>
+ <button data-t="ticker">Tickers</button>
  <button data-t="display">Display</button>
- <button data-t="ticker">Ticker</button>
- <button data-t="usage">Clawdmeter</button>
- <button data-t="radar">Radar</button>
- <button data-t="ha">Home Assistant</button>
+ <button data-t="touch">Touch</button>
+ <button data-t="wifi">WiFi</button>
  <button data-t="update">System</button>
 </nav>
 <main>
  <!-- STATUS -->
  <section id="status" class="tab active">
-  <div class="card"><h2>Device</h2><div id="statusBox" class="muted">Loading...</div></div>
+ <div class="card"><h2>Device</h2><div id="statusBox" class="muted">Loading...</div></div>
+  <div class="card"><h2>Selected screen preview · 240×240</h2><canvas id="dashPreview" class="device" width="240" height="240"></canvas></div>
+ </section>
+
+ <!-- SCREENS -->
+ <section id="screens" class="tab">
+  <input id="tickerEnabled" type="checkbox" hidden><input id="clockEnabled" type="checkbox" hidden>
+  <div class="card"><h2>Screen order</h2><div id="screenList"></div>
+   <div class="row" style="margin-top:12px"><select id="addScreenType"><option value="brand">Pixel Art</option><option value="stocks">Stock / Crypto</option><option value="clock">Clock</option></select><button class="btn sec" style="flex:0 0 auto" onclick="addScreen()">+ Add Screen</button></div>
+   <small class="hint">Use the arrow buttons to reorder. Ticker symbols are managed in Tickers and appear as individual pages inside the ticker group.</small>
+  </div>
+  <div class="card"><h2>Carousel</h2>
+   <div class="chk"><input id="screenAuto" type="checkbox"><label>Automatic rotation</label></div>
+   <label>Default duration (seconds)</label><input id="screenDuration" type="number" min="2" max="3600">
+   <div class="chk"><input id="screenResume" type="checkbox"><label>Resume after manual navigation</label></div>
+   <label>Resume timeout (seconds)</label><input id="screenResumeTimeout" type="number" min="1" max="3600">
+   <div class="chk"><input id="screenLoop" type="checkbox"><label>Loop</label></div>
+  </div>
+ </section>
+
+ <!-- PIXEL ART -->
+ <section id="pixel" class="tab">
+  <div class="card"><h2>Brand / Pixel Art · editor</h2>
+   <div id="pixelGrid" class="pixel-editor" aria-label="32 by 32 pixel editor"></div>
+   <div class="row"><button class="btn sec" onclick="pixelClear()">Clear</button><button class="btn sec" onclick="pixelInvert()">Invert</button><button class="btn sec" onclick="pixelReset()">B&amp;F default</button></div>
+   <div class="row" style="margin-top:8px"><button class="btn sec" onclick="pixelFlip(true)">Flip horizontal</button><button class="btn sec" onclick="pixelFlip(false)">Flip vertical</button></div>
+   <label>Import image (converted locally to 32×32 monochrome)</label><input id="pixelFile" type="file" accept="image/*" onchange="pixelImport(this.files[0])">
+   <button class="btn sec" style="margin-top:10px" onclick="pixelExport()">Export pixel-art configuration</button>
+  </div>
+  <div class="card"><h2>Home screen settings</h2>
+   <div class="chk"><input id="brandEnabled" type="checkbox"><label>Pixel-art enabled</label></div>
+   <div class="row"><div><label>Foreground</label><input id="brandFg" type="color"></div><div><label>Background</label><input id="brandBg" type="color"></div></div>
+   <label>Scale: <span id="brandScaleVal"></span></label><input id="brandScale" type="range" min="1" max="7" oninput="brandScaleVal.textContent=this.value;brandClamp();pixelDrawPreview()">
+   <div class="row"><div><label>Horizontal position</label><input id="brandX" type="number" min="0" max="208" oninput="brandClamp();pixelDrawPreview()"></div><div><label>Vertical position</label><input id="brandY" type="number" min="0" max="208" oninput="brandClamp();pixelDrawPreview()"></div></div>
+   <div class="chk"><input id="brandInvert" type="checkbox" onchange="pixelDrawPreview()"><label>Invert colours</label></div>
+   <label>Screen duration (seconds)</label><input id="brandDuration" type="number" min="2" max="3600">
+  </div>
+  <div class="card"><h2>Device preview · no grid</h2><canvas id="pixelPreview" class="device" width="240" height="240"></canvas><small class="hint">The physical screen renders only solid pixel blocks. No editor grid, interpolation or smoothing is used.</small></div>
  </section>
 
  <!-- WIFI -->
  <section id="wifi" class="tab">
+  <div class="card"><h2>Use at multiple locations</h2>
+   <p class="req"><b>Save every destination network here before moving the device.</b><br>The SmallTV remembers up to four networks and automatically uses the strongest reachable one. If none can be reached, it opens the setup hotspot below; connect to it and open <code>http://192.168.4.1</code> to add the new WiFi.</p>
+  </div>
   <div class="card"><h2>Saved networks</h2>
    <button class="btn sec" onclick="scan()">Scan networks</button>
    <div id="scanList"></div>
    <table id="wifiTable"></table>
    <button class="btn sec" style="margin-top:10px" onclick="addWifi()">+ Add network</button>
    <div style="margin-top:14px"><button class="btn" onclick="saveWifi()">Save &amp; connect (reboots)</button></div>
-   <small class="hint">2.4&nbsp;GHz only. Up to 4 networks; at boot the device joins the strongest one it can see. Tap a scan result to fill a row. Leave a password blank to keep the stored one.</small>
+   <small class="hint">2.4&nbsp;GHz only. Up to 4 networks; at boot the device joins the strongest one it can see and later fails over to another saved network if needed. Tap a scan result to fill a row. Leave a password blank to keep the stored one.</small>
   </div>
   <div class="card"><h2>Device name</h2>
    <label>Hostname</label><input id="hostname" type="text" placeholder="smalltv">
@@ -168,31 +214,6 @@ small.hint{display:block;color:var(--mut);margin-top:4px;font-size:12px}
    <div style="margin-top:10px"><button class="btn sec" onclick="resetColors()">Reset to 100%</button></div>
    <small class="hint">The panels shipped in these devices are not the same part, so the same firmware can look warm on one unit and green on another. Turn a channel down to pull that cast out. If red and blue come out swapped, switch the colour order; if the whole screen looks like a negative, tick Invert. Saving applies it immediately, so you can watch the screen while you adjust.</small>
   </div>
-  <div class="card" id="buttonCard" style="display:none"><h2>Button</h2>
-   <label>Short press</label>
-   <select id="btnShort">
-    <option value="0">Nothing</option>
-    <option value="1">Screen off (~1s)</option>
-    <option value="2">Home (first page)</option>
-    <option value="3">Next page (pause carousel)</option>
-    <option value="4">Show network / IP</option>
-    <option value="5">Wake screen</option>
-    <option value="6">Acknowledge notification</option>
-   </select>
-   <label>Long press</label>
-   <select id="btnLong">
-    <option value="0">Nothing</option>
-    <option value="1">Screen off (~1s)</option>
-    <option value="2">Home (first page)</option>
-    <option value="3">Next page (pause carousel)</option>
-    <option value="4">Show network / IP</option>
-    <option value="5">Wake screen</option>
-    <option value="6">Acknowledge notification</option>
-   </select>
-   <label>Touch sensitivity: <span id="btnSensVal"></span>%</label>
-   <input id="btnSens" type="range" min="50" max="99" oninput="btnSensVal.textContent=this.value">
-   <small class="hint">The capacitive button reads pressed when its touch value drops below this percent of the idle baseline. Lower = firmer touch needed; higher = more sensitive. Next page freezes the carousel on the current page; Home resumes it.</small>
-  </div>
   <div class="card"><h2>Clock &amp; night mode</h2>
    <label>Timezone</label>
    <select id="tz"></select>
@@ -205,6 +226,27 @@ small.hint{display:block;color:var(--mut);margin-top:4px;font-size:12px}
    <label>Night brightness: <span id="nlVal"></span>% <span class="muted">(0 = screen off)</span></label>
    <input id="nightLevel" type="range" min="0" max="100" oninput="nlVal.textContent=this.value">
    <small class="hint">Needs internet once to set the clock over NTP. The timezone also applies to theme clocks. While the window is active it overrides the brightness and auto-brightness above. Times are local to the selected timezone; DST is handled automatically. After a reboot the schedule resumes once the clock re-syncs, so the screen may show normal brightness for a few seconds.</small>
+  </div>
+ </section>
+
+ <!-- TOUCH -->
+ <section id="touch" class="tab">
+  <div class="card" id="buttonCard" style="display:none"><h2>Capacitive touch · GPIO 32 / T9</h2>
+   <label>Short press</label>
+   <select id="btnShort">
+    <option value="0">Nothing</option><option value="1">Screen off</option><option value="2">Home / B&amp;F Pixel Logo</option>
+    <option value="3">Next</option><option value="7">Previous</option><option value="4">Network info</option>
+    <option value="5">Wake display</option><option value="6">Acknowledge notification</option>
+   </select>
+   <label>Long press</label>
+   <select id="btnLong">
+    <option value="0">Nothing</option><option value="1">Screen off</option><option value="2">Home / B&amp;F Pixel Logo</option>
+    <option value="3">Next</option><option value="7">Previous</option><option value="4">Network info</option>
+    <option value="5">Wake display</option><option value="6">Acknowledge notification</option>
+   </select>
+   <label>Touch sensitivity: <span id="btnSensVal"></span>%</label>
+   <input id="btnSens" type="range" min="50" max="99" oninput="btnSensVal.textContent=this.value">
+   <small class="hint">The firmware calibrates an idle baseline and retains upstream median filtering, hysteresis and debounce. Lower requires a firmer touch; higher is more sensitive.</small>
   </div>
  </section>
 
@@ -349,6 +391,11 @@ small.hint{display:block;color:var(--mut);margin-top:4px;font-size:12px}
 
  <!-- UPDATE -->
  <section id="update" class="tab">
+  <div class="card warning"><h2>Original firmware backup</h2>
+   <p><strong>DO NOT FLASH CUSTOM FIRMWARE UNTIL A VERIFIED STOCK BACKUP EXISTS.</strong></p>
+   <p class="muted">Status: <select id="stockBackupStatus" style="margin-top:6px"><option>Unknown</option><option>Backup created</option></select></p>
+   <small class="hint">A configuration backup is not a full firmware backup. The original 8 MB image can only be read through the internal UART header before it is overwritten; this web page cannot recreate it.</small>
+  </div>
   <div class="card"><h2>Update from GitHub</h2>
    <div class="muted">Installed: <b id="fwVer">-</b></div>
    <div style="margin-top:10px">
@@ -365,11 +412,11 @@ small.hint{display:block;color:var(--mut);margin-top:4px;font-size:12px}
    <div id="upMsg" class="muted" style="margin-top:8px"></div>
    <small class="hint">Upload a firmware.bin from the <a href="https://github.com/giovi321/smalltv-mod/releases" target="_blank">releases page</a> or a local build. The device reboots when done.</small>
   </div>
-  <div class="card"><h2>Settings backup</h2>
+  <div class="card"><h2>Configuration backup</h2>
    <button class="btn sec" onclick="location.href='/api/export'">Export settings</button>
    <input id="cfgFile" type="file" accept=".json,application/json" style="margin-top:10px">
    <div style="margin-top:10px"><button class="btn" onclick="importCfg()">Import &amp; reboot</button></div>
-   <small class="hint">The export is the device's <code>config.json</code>, including WiFi passwords and the WireGuard private key in clear text; treat the file accordingly. Import applies everything and reboots.</small>
+   <small class="hint">The export contains screens, tickers, display, touch and pixel-art preferences. WiFi passwords and private keys are intentionally omitted. Import validates supported fields, applies them atomically and reboots.</small>
   </div>
   <div class="card"><h2>Password</h2>
    <div class="chk"><input id="authEnabled" type="checkbox"><label>Ask for a password to open this page</label></div>
@@ -393,6 +440,8 @@ small.hint{display:block;color:var(--mut);margin-top:4px;font-size:12px}
 
 <script>
 var C={};
+var PIX=new Uint8Array(1024),SCREEN_ORDER=[];
+var DEFAULT_PIXEL_ROWS=[0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xf80000ff,0xf800003f,0xf800001f,0xf800001f,0xf800000f,0xf81ffc0f,0xf81ffc0f,0xf81ffc0f,0xf81ffc0f,0xf81f000f,0xf81f001f,0xf81f001f,0xf81f001f,0xf81f000f,0xf81ffc0f,0xfc1ffc0f,0xfc1ffc0f,0xfe1ffc0f,0xfe1f000f,0xff1f001f,0xff9f001f,0xffff003f,0xffff00ff,0xffffffff,0xffffffff,0xffffffff,0xffffffff];
 function $(id){return document.getElementById(id)}
 // null-safe field helpers: a lean build removes some feature tabs entirely
 function sv(id,v){var e=$(id);if(e)e.value=(v!=null?v:'')}
@@ -408,6 +457,31 @@ document.querySelectorAll('nav button').forEach(function(b){b.onclick=function()
  document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active')});
  b.classList.add('active');$(b.dataset.t).classList.add('active');
 }});
+var _sb=$('stockBackupStatus');if(_sb){_sb.value=localStorage.getItem('smalltv-stock-backup')||'Unknown';_sb.onchange=function(){localStorage.setItem('smalltv-stock-backup',this.value)}}
+
+function defaultPixelHex(){return DEFAULT_PIXEL_ROWS.map(function(n){return (n>>>0).toString(16).padStart(8,'0')}).join('')}
+function pixelFromHex(h){if(!/^[0-9a-f]{256}$/i.test(h||''))h=defaultPixelHex();for(var i=0;i<128;i++){var b=parseInt(h.substr(i*2,2),16);for(var k=0;k<8;k++)PIX[i*8+k]=(b&(128>>k))?1:0}}
+function pixelHex(){var h='';for(var i=0;i<128;i++){var b=0;for(var k=0;k<8;k++)if(PIX[i*8+k])b|=128>>k;h+=b.toString(16).padStart(2,'0')}return h}
+function pixelGridBuild(){var g=$('pixelGrid');if(!g||g.children.length)return;for(var i=0;i<1024;i++){var c=document.createElement('i');c.dataset.i=i;g.appendChild(c)}
+ var down=false,paint=1;function hit(e){var el=document.elementFromPoint(e.clientX,e.clientY);if(!el||el.parentNode!==g)return;var n=+el.dataset.i;if(PIX[n]!==paint){PIX[n]=paint;pixelRefresh()}}
+ g.addEventListener('pointerdown',function(e){e.preventDefault();down=true;paint=PIX[+e.target.dataset.i]?0:1;g.setPointerCapture(e.pointerId);hit(e)});
+ g.addEventListener('pointermove',function(e){if(down)hit(e)});g.addEventListener('pointerup',function(){down=false});g.addEventListener('pointercancel',function(){down=false});}
+function pixelRefresh(){var fg=gv('brandFg')||'#000000',bg=gv('brandBg')||'#ffffff',g=$('pixelGrid');if(g)for(var i=0;i<1024;i++)g.children[i].style.background=PIX[i]?fg:bg;pixelDrawPreview()}
+function pixelDrawPreview(){['pixelPreview','dashPreview'].forEach(function(id){var c=$(id);if(!c)return;var x=c.getContext('2d');x.imageSmoothingEnabled=false;var inv=gc('brandInvert'),fg=gv('brandFg')||'#000000',bg=gv('brandBg')||'#ffffff';if(inv){var t=fg;fg=bg;bg=t}x.fillStyle=bg;x.fillRect(0,0,240,240);x.fillStyle=fg;var s=parseInt(gv('brandScale'))||7,ox=parseInt(gv('brandX'))||0,oy=parseInt(gv('brandY'))||0;for(var i=0;i<1024;i++)if(PIX[i])x.fillRect(ox+(i%32)*s,oy+Math.floor(i/32)*s,s,s)})}
+function pixelClear(){PIX.fill(0);pixelRefresh()}
+function pixelInvert(){for(var i=0;i<1024;i++)PIX[i]=PIX[i]?0:1;pixelRefresh()}
+function pixelReset(){pixelFromHex(defaultPixelHex());pixelRefresh()}
+function pixelFlip(horizontal){var q=new Uint8Array(1024);for(var y=0;y<32;y++)for(var x=0;x<32;x++)q[y*32+x]=PIX[(horizontal?y:31-y)*32+(horizontal?31-x:x)];PIX=q;pixelRefresh()}
+function brandClamp(){var s=parseInt(gv('brandScale'))||7,m=240-32*s;['brandX','brandY'].forEach(function(id){var e=$(id),n=Math.max(0,Math.min(m,parseInt(e.value)||0));e.max=m;e.value=n})}
+function pixelImport(f){if(!f)return;var im=new Image(),u=URL.createObjectURL(f);im.onload=function(){var c=document.createElement('canvas');c.width=c.height=32;var x=c.getContext('2d');x.imageSmoothingEnabled=false;x.fillStyle='#fff';x.fillRect(0,0,32,32);x.drawImage(im,0,0,32,32);var d=x.getImageData(0,0,32,32).data;for(var i=0;i<1024;i++)PIX[i]=(d[i*4]*.299+d[i*4+1]*.587+d[i*4+2]*.114)<128?1:0;URL.revokeObjectURL(u);pixelRefresh()};im.src=u}
+function pixelExport(){var b={format:'smalltv-pixel-art-v1',width:32,height:32,bitmap:pixelHex(),foreground:gv('brandFg'),background:gv('brandBg')};var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(b,null,2)],{type:'application/json'}));a.download='brands-friends-pixel-art.json';a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},500)}
+var SCREEN_NAMES={brand:'B&F Pixel Logo',stocks:'Stocks & Crypto',clock:'Clock',usage:'Clawdmeter',radar:'Radar',ha:'Home Assistant',theme:'Theme clock'};
+function screenEnabled(id){return id==='brand'?gc('brandEnabled'):id==='stocks'?gc('tickerEnabled'):id==='clock'?gc('clockEnabled'):gc('carousel'+({usage:'Usage',radar:'Radar',ha:'Ha',theme:'Theme'}[id]||''))}
+function setScreenEnabled(id,v){if(id==='brand')sc('brandEnabled',v);else if(id==='stocks')sc('tickerEnabled',v);else if(id==='clock')sc('clockEnabled',v);else sc('carousel'+({usage:'Usage',radar:'Radar',ha:'Ha',theme:'Theme'}[id]||''),v)}
+function renderScreens(){var e=$('screenList');if(!e)return;e.innerHTML='';SCREEN_ORDER.forEach(function(id,i){var r=document.createElement('div');r.className='screen-row';r.innerHTML='<input type="checkbox" '+(screenEnabled(id)?'checked':'')+' onchange="setScreenEnabled(\''+id+'\',this.checked)"><b>'+esc(SCREEN_NAMES[id]||id)+'</b><button class="btn sec" onclick="moveScreen('+i+',-1)">↑</button><button class="btn sec" onclick="moveScreen('+i+',1)">↓</button><button class="btn sec" onclick="removeScreen('+i+')">×</button>';e.appendChild(r)})}
+function moveScreen(i,d){var n=i+d;if(n<0||n>=SCREEN_ORDER.length)return;var t=SCREEN_ORDER[i];SCREEN_ORDER[i]=SCREEN_ORDER[n];SCREEN_ORDER[n]=t;renderScreens()}
+function removeScreen(i){setScreenEnabled(SCREEN_ORDER[i],false);SCREEN_ORDER.splice(i,1);renderScreens()}
+function addScreen(){var id=gv('addScreenType');if(SCREEN_ORDER.indexOf(id)<0)SCREEN_ORDER.push(id);setScreenEnabled(id,true);renderScreens()}
 
 // field groups by their location in the nested config
 var T_TEXT=['webhookUrl','range'];                   // ticker strings
@@ -480,7 +554,7 @@ function loadConfig(){return j('/api/config').then(function(c){C=c;
   sv('btnLong',b.longAction!=null?b.longAction:4);
   sv('btnSens',b.sensitivity!=null?b.sensitivity:85);
   $('btnSensVal')&&($('btnSensVal').textContent=(b.sensitivity!=null?b.sensitivity:85));
- }
+ }else{var _tb=document.querySelector('nav button[data-t="touch"]');if(_tb)_tb.remove();var _ts=$('touch');if(_ts)_ts.remove()}
  var w=c.wg||{};
  sc('wgEnabled',!!w.enabled); sv('wgPeerPublicKey',w.peerPublicKey);
  sv('wgEndpointHost',w.endpointHost); sv('wgEndpointPort',w.endpointPort||51820);
@@ -512,6 +586,16 @@ function loadConfig(){return j('/api/config').then(function(c){C=c;
  sv('carouselSec',c.carouselSec||30);
  sc('carouselTicker',c.carouselTicker!==false); sc('carouselUsage',c.carouselUsage!==false); sc('carouselRadar',c.carouselRadar!==false);
  sc('carouselHa',c.carouselHa!==false); sc('carouselTheme',c.carouselTheme===true);
+ // Product screen manager and editable brand bitmap
+ var bs=c.brand||{},ss=c.screens||{};
+ sc('brandEnabled',bs.enabled!==false);sv('brandFg',bs.foreground||'#000000');sv('brandBg',bs.background||'#ffffff');
+ sv('brandScale',bs.scale||7);$('brandScaleVal').textContent=bs.scale||7;sv('brandX',bs.x!=null?bs.x:8);sv('brandY',bs.y!=null?bs.y:8);
+ sc('brandInvert',!!bs.inverted);sv('brandDuration',bs.durationSec||10);
+ sc('tickerEnabled',!!ss.tickerEnabled);sc('clockEnabled',!!ss.clockEnabled);sc('screenAuto',ss.autoRotate!==false);
+ sv('screenDuration',ss.defaultDurationSec||10);sc('screenResume',ss.resumeAfterManual!==false);sv('screenResumeTimeout',ss.resumeTimeoutSec||30);sc('screenLoop',ss.loop!==false);
+ SCREEN_ORDER=(ss.order||'brand,stocks,clock,usage,radar,ha,theme').split(',').filter(function(id){return !!SCREEN_NAMES[id]});
+ pixelGridBuild();pixelFromHex(bs.bitmap);brandClamp();pixelRefresh();renderScreens();
+ ['brandFg','brandBg'].forEach(function(id){$(id).oninput=pixelRefresh});
  // HA / MQTT slice
  var h=c.ha||{};
  sv('haBrokerHost',h.brokerHost); sv('haBrokerPort',h.brokerPort||1883);
@@ -610,6 +694,11 @@ function collect(){
   display:{colorOrder:gv('colorOrder')||'auto', invert:gc('colorInvert'),
    rGain:parseInt(gv('rGain'))||100, gGain:parseInt(gv('gGain'))||100, bGain:parseInt(gv('bGain'))||100},
   wifi:collectWifi()};
+ o.brand={enabled:gc('brandEnabled'),bitmap:pixelHex(),foreground:gv('brandFg')||'#000000',background:gv('brandBg')||'#ffffff',
+  scale:parseInt(gv('brandScale'))||7,x:parseInt(gv('brandX'))||0,y:parseInt(gv('brandY'))||0,inverted:gc('brandInvert'),durationSec:parseInt(gv('brandDuration'))||10};
+ o.screens={order:SCREEN_ORDER.join(','),autoRotate:gc('screenAuto'),defaultDurationSec:parseInt(gv('screenDuration'))||10,
+  resumeAfterManual:gc('screenResume'),resumeTimeoutSec:parseInt(gv('screenResumeTimeout'))||30,loop:gc('screenLoop'),
+  tickerEnabled:gc('tickerEnabled'),clockEnabled:gc('clockEnabled')};
  // Web UI password: same blank-keeps-stored rule as everywhere else. The
  // firmware refuses to enable it without a stored password to check against.
  if($('authEnabled')){var _a={enabled:gc('authEnabled'), user:gv('authUser')||'admin'};
@@ -770,6 +859,8 @@ function showStatus(s){
   kv('Signal',s.rssi?s.rssi+' dBm':'-')+
   (s.wifiFail?kv('Last join failure',s.wifiFail):'')+
   kv('Free heap',s.heap+' B'+(s.maxblk?' ('+s.maxblk+' B largest block)':''))+
+  kv('Flash',Math.round((s.flashSize||0)/1048576)+' MB · firmware '+Math.round((s.sketchSize||0)/1024)+' KiB')+
+  kv('LittleFS',(s.fsUsed||0)+' / '+(s.fsTotal||0)+' B')+kv('Build',s.build||'-')+kv('Git commit',s.git||'-')+
   kv('Uptime',fmtUp(s.uptime))+kv('Last reset',s.reset||'-')+
   ((s.wg&&s.wg.compiledIn)?kv('VPN',s.wg.held?'held':(s.wg.up?'up':(s.wg.enabled?'connecting':'off'))):'')+
   (s.radar?kv('Radar',radarLine(s.radar)):'');
@@ -899,6 +990,11 @@ function upload(){var f=$('fw').files[0];if(!f){toast('Pick a .bin first');retur
  x.send(fd);
 }
 
+// Useful defaults also make the embedded page a faithful standalone mockup
+// when opened from source without a device API behind it.
+pixelGridBuild();pixelFromHex(defaultPixelHex());sc('brandEnabled',true);sv('brandFg','#000000');sv('brandBg','#ffffff');
+sv('brandScale',7);$('brandScaleVal').textContent='7';sv('brandX',8);sv('brandY',8);sv('brandDuration',10);brandClamp();pixelRefresh();
+SCREEN_ORDER=['brand','stocks','clock'];renderScreens();
 loadConfig().then(loadStatus,loadStatus);   // the status polls on, whatever the config did
 </script>
 </body></html>

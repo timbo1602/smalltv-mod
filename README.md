@@ -4,6 +4,8 @@
 
 <h1 align="center">smalltv-mod</h1>
 
+> **SmallTV Pro safety: DO NOT FLASH CUSTOM FIRMWARE UNTIL A VERIFIED STOCK BACKUP EXISTS.** See [the macOS full-flash backup and restore guide](docs/stock-backup-and-restore.md) and the helper scripts in `tools/`.
+
 <p align="center">
   <a href="https://github.com/giovi321/smalltv-mod/actions/workflows/build.yml"><img src="https://github.com/giovi321/smalltv-mod/actions/workflows/build.yml/badge.svg?branch=main&amp;event=push" alt="Build"></a>
   <a href="https://github.com/giovi321/smalltv-mod/actions/workflows/docs.yml"><img src="https://github.com/giovi321/smalltv-mod/actions/workflows/docs.yml/badge.svg?branch=main&amp;event=push" alt="Docs"></a>

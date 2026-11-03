@@ -12,8 +12,12 @@
 // ---------------------------------------------------------------------------
 // Firmware identity
 // ---------------------------------------------------------------------------
-#define FW_NAME     "smalltv-mod"
-#define FW_VERSION  "3.3.0"
+#define FW_NAME     "brands-and-friends-smalltv"
+#define FW_VERSION  "1.0.0"
+#define FW_BUILD_DATE __DATE__ " " __TIME__
+#ifndef GIT_COMMIT
+#define GIT_COMMIT "unknown"
+#endif
 
 // Project / update references (shown in the web UI; used by the GitHub self-update)
 #define REPO_URL      "https://github.com/giovi321/smalltv-mod"
@@ -142,6 +146,8 @@
 #define MODE_NOTIFY    4             // transient overlay: armed over HTTP, never persisted
 #define MODE_THEME     6             // declarative installed clock faces
 #define MODE_HA        5             // Home Assistant screens pushed over MQTT
+#define MODE_BRAND     7             // 32x32 configurable pixel-art home screen
+#define MODE_CLOCK     8             // lightweight built-in clock screen
 #define DEFAULT_MODE MODE_STOCKS
 #define DEFAULT_CAROUSEL_SEC 30      // per-mode dwell in carousel
 
@@ -157,7 +163,8 @@
 #define BTN_ACT_NETINFO    4   // show the network / IP screen briefly
 #define BTN_ACT_WAKE       5   // wake the screen to normal brightness briefly (e.g. from night mode)
 #define BTN_ACT_ACK        6   // acknowledge the active notification (expire it now)
-#define BTN_ACT_MAX        BTN_ACT_ACK
+#define BTN_ACT_PREVIOUS   7   // previous carousel screen
+#define BTN_ACT_MAX        BTN_ACT_PREVIOUS
 
 #define BTN_LONG_MS        600 // press held >= this many ms is a long press
 #define BTN_INFO_MS       4000 // how long the network-info screen stays up
@@ -170,7 +177,17 @@
 #define DEFAULT_BTN_SENS   85
 #endif
 #define DEFAULT_BTN_SHORT  BTN_ACT_NEXT
-#define DEFAULT_BTN_LONG   BTN_ACT_NETINFO
+#define DEFAULT_BTN_LONG   BTN_ACT_HOME
+
+// ---------------------------------------------------------------------------
+// brands and friends screen manager / pixel-art home screen
+// ---------------------------------------------------------------------------
+#define PIXEL_ART_W             32
+#define PIXEL_ART_H             32
+#define PIXEL_ART_BYTES        128
+#define PIXEL_ART_HEX_LEN      256
+#define MAX_SCREEN_ORDER_LEN    80
+#define DEFAULT_SCREEN_ORDER    "brand,stocks,clock,usage,radar,ha,theme"
 
 // Full-screen attention overlay (POST /api/notify), in seconds.
 #define NOTIFY_TTL_DEFAULT_SEC  20
